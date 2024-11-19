@@ -1,0 +1,1 @@
+void second(int *y);
