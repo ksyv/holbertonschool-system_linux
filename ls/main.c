@@ -2,12 +2,12 @@
 
 /**
  * process_arg - Lit un dossier ou affiche un fichier
- * @arg: Le nom du dossier ou fichier à lire
- * @prog_name: Le nom du programme exécuté (argv[0])
+ * @arg: Le nom du dossier ou fichier a lire
+ * @prog_name: Le nom du programme execute
  * @multiple: 1 s'il y a plusieurs dossiers, 0 sinon
  * @opt: Pointeur vers la structure d'options
  *
- * Return: 0 en cas de succès, 2 en cas d'erreur
+ * Return: 0 en cas de succes, 2 en cas d'erreur
  */
 int process_arg(const char *arg, const char *prog_name, int multiple, opt_t *opt)
 {
@@ -53,8 +53,8 @@ int process_arg(const char *arg, const char *prog_name, int multiple, opt_t *opt
 }
 
 /**
- * is_dir - Vérifie si un chemin est un dossier (gère les symlinks)
- * @arg: Le chemin à tester
+ * is_dir - Verifie si un chemin est un dossier (gere les symlinks)
+ * @arg: Le chemin a tester
  *
  * Return: 1 si dossier, 0 sinon
  */
@@ -63,18 +63,15 @@ int is_dir(const char *arg)
 	DIR *dir;
 	struct stat st;
 
-	/* Si c'est un vrai dossier direct, on gagne du temps */
 	if (lstat(arg, &st) == 0 && S_ISDIR(st.st_mode))
 		return (1);
 
-	/* Si c'est un lien symbolique, lstat dit non. On teste en ouvrant le lien ! */
 	dir = opendir(arg);
 	if (dir != NULL)
 	{
 		closedir(dir);
 		return (1);
 	}
-	/* Si EACCES, le dossier existe mais on n'a pas les droits */
 	if (errno == EACCES)
 		return (1);
 
@@ -85,7 +82,7 @@ int is_dir(const char *arg)
  * parse_options - Analyse les arguments pour allumer les bons flags
  * @argc: Nombre d'arguments
  * @argv: Tableau des arguments
- * @opt: Structure d'options à remplir
+ * @opt: Structure d'options a remplir
  *
  * Return: Le nombre d'arguments qui sont des options
  */
@@ -111,11 +108,11 @@ int parse_options(int argc, char **argv, opt_t *opt)
 }
 
 /**
- * main - Point d'entrée pour hls
+ * main - Point d'entree pour hls
  * @argc: Nombre d'arguments
  * @argv: Tableau d'arguments
  *
- * Return: 0 en cas de succès complet, 2 si erreur
+ * Return: 0 en cas de succes complet, 2 si erreur
  */
 int main(int argc, char **argv)
 {
