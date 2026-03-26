@@ -9,8 +9,8 @@
  *
  * Return: 0 en cas de succes, 2 en cas d'erreur
  */
-int process_arg(const char *arg, const char *prog_name, int multiple, 
-    opt_t *opt)
+int process_arg(const char *arg, const char *prog_name, int multiple,
+opt_t *opt)
 {
 	DIR *dir;
 	struct dirent *read;
