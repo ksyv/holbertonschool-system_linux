@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 /**
  * struct opt_s - Structure pour stocker les options activées

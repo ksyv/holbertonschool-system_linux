@@ -92,31 +92,54 @@ int parse_options(int argc, char **argv, opt_t *opt)
  *
  * Return: 0 en cas de succès complet, 2 si une erreur est survenue
  */
+/**
+ * main - Point d'entrée pour hls
+ * @argc: Nombre d'arguments
+ * @argv: Tableau d'arguments
+ *
+ * Return: 0 en cas de succès complet, 2 si une erreur est survenue
+ */
 int main(int argc, char **argv)
 {
 	int i, exit_code = 0, multiple, opt_count, file_count;
 	int first_dir = 1;
 	opt_t opt;
+	struct stat st;
 
-	/* 1. On scanne toutes les options tapées */
 	opt_count = parse_options(argc, argv, &opt);
-	
-	/* 2. On déduit combien il reste de vrais noms de dossiers/fichiers */
 	file_count = (argc - 1) - opt_count;
 	multiple = (file_count > 1);
 
-	/* 3. S'il n'y a que des options et pas de dossier, on lit "." par défaut */
 	if (file_count == 0)
 	{
 		exit_code = process_arg(".", argv[0], 0, &opt);
 	}
 	else
 	{
-		/* 4. On relit argv, mais on ignore les options cette fois */
+		/* PASSE 1 : On ne traite QUE les fichiers (ou ce qui n'existe pas) */
 		for (i = 1; i < argc; i++)
 		{
-			if (argv[i][0] != '-' || argv[i][1] == '\0')
+			if (argv[i][0] == '-' && argv[i][1] != '\0')
+				continue;
+			
+			/* Si lstat échoue (erreur) OU si ce n'est PAS un dossier */
+			if (lstat(argv[i], &st) == -1 || !S_ISDIR(st.st_mode))
 			{
+				if (process_arg(argv[i], argv[0], multiple, &opt) == 2)
+					exit_code = 2;
+			}
+		}
+
+		/* PASSE 2 : On ne traite QUE les dossiers */
+		for (i = 1; i < argc; i++)
+		{
+			if (argv[i][0] == '-' && argv[i][1] != '\0')
+				continue;
+			
+			/* Si lstat réussit ET que c'est bien un dossier */
+			if (lstat(argv[i], &st) == 0 && S_ISDIR(st.st_mode))
+			{
+				/* Espacement entre plusieurs dossiers */
 				if (multiple && !first_dir)
 					printf("\n");
 				
