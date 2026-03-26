@@ -10,10 +10,14 @@
 /**
  * struct opt_s - Structure pour stocker les options activées
  * @one: 1 si l'option -1 est activée, 0 sinon
+ * @a: 1 si l'option -a est activée, 0 sinon
+ * @A: 1 si l'option -A est activée, 0 sinon
  */
 typedef struct opt_s
 {
-	int one;
+    int one;
+    int a;
+    int A;
 } opt_t;
 
 int process_arg(const char *arg, const char *prog_name, int multiple,

@@ -43,3 +43,12 @@ Ce projet consiste à recréer la commande système `ls` de zéro en langage C. 
 * **Modularité avec `struct` :** Pour anticiper proprement les tâches futures, une structure `opt_t` est créée. Elle regroupera tous les *flags* (booléens) correspondant à chaque option (`-1`, `-a`, `-l`, etc.). Si le flag `one` est activé, la fonction d'affichage insère un `\n` après chaque fichier au lieu de deux espaces.
 * **Ordre d'affichage (Tri implicite) :** Peu importe l'ordre des arguments passés dans le terminal, `ls` affiche toujours les fichiers individuels en premier, puis le contenu des répertoires. Pour reproduire ce comportement, la boucle principale de `main` utilise `lstat()` et la macro `S_ISDIR` pour séparer le traitement en deux passes : une pour les fichiers purs (et les erreurs), une seconde pour les répertoires.
 * **Le piège des Liens Symboliques (Symlinks) :** Le tri des arguments (fichiers d'abord, dossiers ensuite) cache un piège majeur. La fonction `lstat()` ne suit pas les liens symboliques. Si un dossier est passé sous forme de lien, `lstat` le considèrera comme un fichier standard. La fonction `stat` n'étant pas autorisée, nous avons implémenté un système de "fallback" (secours) via `opendir()` dans une fonction `is_dir()` : si `lstat` échoue à prouver que c'est un dossier, on tente de l'ouvrir. Si l'ouverture réussit, c'est que le lien menait bien à un dossier !
+
+### Tâches 3 et 4 : Hidden files (`-a`) et Almost all (`-A`)
+**Objectif :** Gérer l'affichage des fichiers cachés avec des niveaux de granularité différents.
+
+**Concepts clés et implémentation :**
+* **Extensibilité de l'architecture :** Les options `-a` et `-A` sont ajoutées comme de simples flags booléens dans notre structure `opt_t`. Notre parser d'arguments lit les options combinées (ex: `-1aA`) sans problème.
+* **Logique de priorité :** Si l'utilisateur tape `hls -a -A`, le comportement natif de `ls` veut que `-a` prenne le dessus (tout afficher). Notre code gère cela avec la condition `if (opt->A && !opt->a)`.
+* **Comparaison de chaînes sans `strcmp` :** La bibliothèque `<string.h>` étant proscrite, l'identification des dossiers spéciaux `.` et `..` se fait via l'inspection directe de la mémoire dans le tableau de caractères `d_name`. On vérifie la position du caractère de fin de chaîne `\0` pour s'assurer que le nom est *exactement* `.` ou `..` et non pas un fichier nommé `.hidden`.
+

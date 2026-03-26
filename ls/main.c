@@ -37,15 +37,32 @@ opt_t *opt)
 		printf("%s:\n", arg);
 
 	while ((read = readdir(dir)) != NULL)
-	{
-		if (read->d_name[0] != '.')
-		{
-			if (opt->one)
-				printf("%s\n", read->d_name);
-			else
-				printf("%s  ", read->d_name);
-		}
-	}
+    {
+        /* Si c'est un fichier caché (commence par un point) */
+        if (read->d_name[0] == '.')
+        {
+            /* Si ni -a ni -A ne sont activés, on ignore ce fichier */
+            if (!opt->a && !opt->A)
+                continue;
+
+            /* Si -A est activé mais pas -a, on doit filtrer "." et ".." */
+            if (opt->A && !opt->a)
+            {
+                /* C'est exactement "." (un point suivi de la fin de chaîne) */
+                if (read->d_name[1] == '\0')
+                    continue;
+                /* C'est exactement ".." (deux points suivis de la fin) */
+                if (read->d_name[1] == '.' && read->d_name[2] == '\0')
+                    continue;
+            }
+        }
+
+        /* L'affichage reste géré par l'option -1 */
+        if (opt->one)
+            printf("%s\n", read->d_name);
+        else
+            printf("%s  ", read->d_name);
+    }
 	if (!opt->one)
 		printf("\n");
 
@@ -89,23 +106,29 @@ int is_dir(const char *arg)
  */
 int parse_options(int argc, char **argv, opt_t *opt)
 {
-	int i, j, opt_count = 0;
+    int i, j, opt_count = 0;
 
-	opt->one = 0;
+    opt->one = 0;
+    opt->a = 0; /* Nouveau */
+    opt->A = 0; /* Nouveau */
 
-	for (i = 1; i < argc; i++)
-	{
-		if (argv[i][0] == '-' && argv[i][1] != '\0')
-		{
-			opt_count++;
-			for (j = 1; argv[i][j] != '\0'; j++)
-			{
-				if (argv[i][j] == '1')
-					opt->one = 1;
-			}
-		}
-	}
-	return (opt_count);
+    for (i = 1; i < argc; i++)
+    {
+        if (argv[i][0] == '-' && argv[i][1] != '\0')
+        {
+            opt_count++;
+            for (j = 1; argv[i][j] != '\0'; j++)
+            {
+                if (argv[i][j] == '1')
+                    opt->one = 1;
+                else if (argv[i][j] == 'a') /* Nouveau */
+                    opt->a = 1;
+                else if (argv[i][j] == 'A') /* Nouveau */
+                    opt->A = 1;
+            }
+        }
+    }
+    return (opt_count);
 }
 
 /**
