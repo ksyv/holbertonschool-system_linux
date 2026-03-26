@@ -39,18 +39,45 @@ int process_arg(const char *arg, const char *prog_name, int multiple, opt_t *opt
 	{
 		if (read->d_name[0] != '.')
 		{
-			/* C'est ICI que l'option -1 entre en jeu ! */
 			if (opt->one)
 				printf("%s\n", read->d_name);
 			else
 				printf("%s  ", read->d_name);
 		}
 	}
-	/* Si on n'est pas en mode -1, on doit faire un retour à la ligne à la fin */
 	if (!opt->one)
 		printf("\n");
 
 	closedir(dir);
+	return (0);
+}
+
+/**
+ * is_dir - Vérifie si un chemin est un dossier (gère les symlinks)
+ * @arg: Le chemin à tester
+ *
+ * Return: 1 si dossier, 0 sinon
+ */
+int is_dir(const char *arg)
+{
+	DIR *dir;
+	struct stat st;
+
+	/* Si c'est un vrai dossier direct, on gagne du temps */
+	if (lstat(arg, &st) == 0 && S_ISDIR(st.st_mode))
+		return (1);
+
+	/* Si c'est un lien symbolique, lstat dit non. On teste en ouvrant le lien ! */
+	dir = opendir(arg);
+	if (dir != NULL)
+	{
+		closedir(dir);
+		return (1);
+	}
+	/* Si EACCES, le dossier existe mais on n'a pas les droits */
+	if (errno == EACCES)
+		return (1);
+
 	return (0);
 }
 
@@ -60,21 +87,19 @@ int process_arg(const char *arg, const char *prog_name, int multiple, opt_t *opt
  * @argv: Tableau des arguments
  * @opt: Structure d'options à remplir
  *
- * Return: Le nombre d'arguments qui sont des options (commençant par '-')
+ * Return: Le nombre d'arguments qui sont des options
  */
 int parse_options(int argc, char **argv, opt_t *opt)
 {
 	int i, j, opt_count = 0;
 
-	opt->one = 0; /* On initialise tout à 0 (faux) par défaut */
+	opt->one = 0;
 
 	for (i = 1; i < argc; i++)
 	{
-		/* Si le mot commence par '-' et n'est pas juste un tiret vide */
 		if (argv[i][0] == '-' && argv[i][1] != '\0')
 		{
 			opt_count++;
-			/* On parcourt chaque lettre de l'option */
 			for (j = 1; argv[i][j] != '\0'; j++)
 			{
 				if (argv[i][j] == '1')
@@ -90,14 +115,13 @@ int parse_options(int argc, char **argv, opt_t *opt)
  * @argc: Nombre d'arguments
  * @argv: Tableau d'arguments
  *
- * Return: 0 en cas de succès complet, 2 si une erreur est survenue
+ * Return: 0 en cas de succès complet, 2 si erreur
  */
 int main(int argc, char **argv)
 {
 	int i, exit_code = 0, multiple, opt_count, file_count;
 	int first_dir = 1;
 	opt_t opt;
-	struct stat st;
 
 	opt_count = parse_options(argc, argv, &opt);
 	file_count = (argc - 1) - opt_count;
@@ -109,30 +133,27 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		/* PASSE 1 : On ne traite QUE les fichiers (ou ce qui n'existe pas) */
+		/* PASSE 1 : Fichiers purs et erreurs */
 		for (i = 1; i < argc; i++)
 		{
 			if (argv[i][0] == '-' && argv[i][1] != '\0')
 				continue;
 			
-			/* Si lstat échoue (erreur) OU si ce n'est PAS un dossier */
-			if (lstat(argv[i], &st) == -1 || !S_ISDIR(st.st_mode))
+			if (!is_dir(argv[i]))
 			{
 				if (process_arg(argv[i], argv[0], multiple, &opt) == 2)
 					exit_code = 2;
 			}
 		}
 
-		/* PASSE 2 : On ne traite QUE les dossiers */
+		/* PASSE 2 : Dossiers */
 		for (i = 1; i < argc; i++)
 		{
 			if (argv[i][0] == '-' && argv[i][1] != '\0')
 				continue;
 			
-			/* Si lstat réussit ET que c'est bien un dossier */
-			if (lstat(argv[i], &st) == 0 && S_ISDIR(st.st_mode))
+			if (is_dir(argv[i]))
 			{
-				/* Espacement entre plusieurs dossiers */
 				if (multiple && !first_dir)
 					printf("\n");
 				
