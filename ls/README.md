@@ -32,3 +32,12 @@ Ce projet consiste à recréer la commande système `ls` de zéro en langage C. 
 * `errno` et `ENOTDIR` : Si `opendir()` échoue, on vérifie la valeur de la variable globale `errno`. Si elle vaut `ENOTDIR`, l'argument fourni est un fichier valide et non un dossier. Le programme affiche alors simplement le nom du fichier.
 * `sprintf` combiné à `perror` : Pour reproduire scrupuleusement le message d'erreur natif de `ls` (ex: `./hls: cannot access folder: No such file or directory`) sans utiliser la fonction interdite `strerror()`, on utilise `sprintf` pour formater un préfixe personnalisé que l'on passe ensuite à `perror()`.
 * **Exit code :** Le programme stocke l'état d'échec d'un des paramètres et s'assure de retourner `2` à la fin de l'exécution si une erreur d'accès est survenue, respectant ainsi le comportement natif.
+* **Précision des messages d'erreur :** `ls` adapte son message selon le type d'erreur. Si `errno` vaut `EACCES` (Permission denied), le message exact doit être `cannot open directory`. Pour les autres erreurs comme `ENOENT` (No such file), le préfixe reste `cannot access`.
+
+### Tâche 2 : What about options? (`-1`)
+**Objectif :** Implémenter l'option `-1` (qui force l'affichage d'un fichier par ligne) tout en gérant l'ordre aléatoire des arguments dans la commande.
+
+**Concepts clés et implémentation :**
+* **L'absence de `getopt` :** La fonction standard d'analyse d'arguments n'étant pas autorisée, nous devons concevoir un *parser* personnalisé.
+* **Architecture "Deux passes" :** Le programme effectue une première lecture de `argv` via `parse_options` pour repérer toutes les chaînes commençant par `-` et configurer l'état du programme. La boucle principale dans `main` effectue ensuite une seconde lecture en ignorant les options pour ne traiter que les cibles (fichiers/dossiers).
+* **Modularité avec `struct` :** Pour anticiper proprement les tâches futures, une structure `opt_t` est créée. Elle regroupera tous les *flags* (booléens) correspondant à chaque option (`-1`, `-a`, `-l`, etc.). Si le flag `one` est activé, la fonction d'affichage insère un `\n` après chaque fichier au lieu de deux espaces.
