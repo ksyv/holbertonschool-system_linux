@@ -175,11 +175,12 @@ int main(int argc, char **argv)
 	if (argc - 1 - opt_c == 0)
 		return (process_arg(".", argv[0], 0, &opt));
 
+	/* 1. Collecter tous les arguments valides */
 	for (i = 1; i < argc; i++)
 		if (argv[i][0] != '-' || argv[i][1] == '\0')
 			args[arg_c++] = argv[i];
 
-	/* Utilisation de notre nouvelle fonction _strcoll */
+	/* 2. Trier les arguments (Case-insensitive) */
 	for (i = 0; i < arg_c - 1; i++)
 		for (j = 0; j < arg_c - i - 1; j++)
 			if (_strcoll(args[j], args[j + 1]) > 0)
@@ -189,14 +190,17 @@ int main(int argc, char **argv)
 				args[j + 1] = tmp;
 			}
 
+	/* 3. PASSE 1 : Afficher les fichiers purs et erreurs */
 	for (i = 0; i < arg_c; i++)
 		if (!is_dir(args[i]))
 		{
 			if (process_arg(args[i], argv[0], mult, &opt) == 2)
 				e_code = 2;
-			has_file = 1;
+			else
+				has_file = 1; /* ICI : Uniquement si c'est un vrai fichier ! */
 		}
 
+	/* 4. PASSE 2 : Afficher les dossiers */
 	for (i = 0; i < arg_c; i++)
 		if (is_dir(args[i]))
 		{
@@ -211,3 +215,4 @@ int main(int argc, char **argv)
 		}
 	return (e_code);
 }
+
