@@ -64,3 +64,13 @@ Ce projet consiste à recréer la commande système `ls` de zéro en langage C. 
 **⚠️ LES PIÈGES INVISIBLES DE LA MOULINETTE (Tâches 3 & 4) :**
 * **Le tri alphabétique des arguments :** `ls` ne traite pas les arguments dans l'ordre où ils sont tapés. Si on tape `ls folder B folder A`, il traitera `A` puis `B`. Les arguments doivent être triés dans un tableau avant d'être envoyés dans les "deux passes".
 * **Le tri "Case-Insensitive" (Le Boss Final) :** Attention, le tri natif de Linux ignore la casse ! Dans la table ASCII classique, les majuscules viennent avant les minuscules (`Folder2` serait classé avant `folder1`). Pour contourner ce piège sans utiliser `<string.h>`, nous avons créé une fonction personnalisée `_strcoll` qui abaisse virtuellement la casse des caractères pendant la comparaison, reproduisant ainsi le "dictionary sort" exact attendu par le checker.
+
+### Tâche 5 : The Long Format (`-l`)
+**Objectif :** Implémenter l'affichage détaillé incluant le type de fichier, les permissions, le nombre de liens, le propriétaire, le groupe, la taille et la date de dernière modification.
+
+**Concepts clés et implémentation :**
+* **Extraction des métadonnées (`lstat`) :** On utilise la structure `stat` pour récupérer toutes les informations brutes du fichier. La fonction `lstat` est privilégiée à `stat` pour s'assurer de récupérer les infos d'un lien symbolique et non du fichier vers lequel il pointe.
+* **Formatage des permissions (Bitmasking) :** Les permissions sont extraites via des opérations bit-à-bit (ET binaire `&`) entre le champ `st.st_mode` et les masques POSIX constants (`S_IRUSR`, `S_IWGRP`, etc.).
+* **Résolution des identifiants :** Les champs `st_uid` et `st_gid` retournent des IDs numériques. Les fonctions `getpwuid()` et `getgrgid()` sont utilisées pour interroger la base de données du système (`/etc/passwd` et `/etc/group`) et récupérer les noms en clair sous forme de structures.
+* **Formatage temporel :** Le timestamp de modification (`st_mtime`) est converti en chaîne lisible via `ctime()`. Le format de retour natif (`Day Mon DD HH:MM:SS YYYY\n`) est tronqué grâce à l'astuce de formatage de `printf` : `printf("%.12s", t + 4)` permet de n'extraire que les 12 caractères de la date et l'heure (ex: `Mar 26 13:01`).
+* **Modularité :** Pour respecter la limite stricte de Betty (40 lignes par fonction), l'affichage du format long a été déporté dans un fichier séparé `long_format.c`.

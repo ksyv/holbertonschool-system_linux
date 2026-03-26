@@ -13,14 +13,17 @@ int process_arg(const char *arg, const char *p_name, int mult, opt_t *opt)
 {
 	DIR *dir;
 	struct dirent *read;
-	char err[512];
+	char err[512], full_path[1024];
 
 	dir = opendir(arg);
 	if (dir == NULL)
 	{
 		if (errno == ENOTDIR)
 		{
-			printf("%s\n", arg);
+			if (opt->l)
+				print_long(arg, arg);
+			else
+				printf("%s\n", arg);
 			return (0);
 		}
 		if (errno == EACCES)
@@ -30,32 +33,30 @@ int process_arg(const char *arg, const char *p_name, int mult, opt_t *opt)
 		perror(err);
 		return (2);
 	}
-
 	if (mult)
 		printf("%s:\n", arg);
-
 	while ((read = readdir(dir)) != NULL)
 	{
 		if (read->d_name[0] == '.')
 		{
 			if (!opt->a && !opt->A)
 				continue;
-			if (opt->A && !opt->a)
-			{
-				if (read->d_name[1] == '\0')
-					continue;
-				if (read->d_name[1] == '.' && read->d_name[2] == '\0')
-					continue;
-			}
+			if (opt->A && !opt->a && (read->d_name[1] == '\0' ||
+				(read->d_name[1] == '.' && read->d_name[2] == '\0')))
+				continue;
 		}
-		if (opt->one)
+		if (opt->l)
+		{
+			sprintf(full_path, "%s/%s", arg, read->d_name);
+			print_long(full_path, read->d_name);
+		}
+		else if (opt->one)
 			printf("%s\n", read->d_name);
 		else
 			printf("%s  ", read->d_name);
 	}
-	if (!opt->one)
+	if (!opt->one && !opt->l)
 		printf("\n");
-
 	closedir(dir);
 	return (0);
 }
@@ -73,7 +74,6 @@ int is_dir(const char *arg)
 
 	if (lstat(arg, &st) == 0 && S_ISDIR(st.st_mode))
 		return (1);
-
 	dir = opendir(arg);
 	if (dir != NULL)
 	{
@@ -82,7 +82,6 @@ int is_dir(const char *arg)
 	}
 	if (errno == EACCES)
 		return (1);
-
 	return (0);
 }
 
@@ -98,12 +97,10 @@ int _strcoll(const char *s1, const char *s2)
 	int c1, c2;
 	const char *o1 = s1, *o2 = s2;
 
-	/* On compare en transformant virtuellement en minuscules */
 	while (*s1 && *s2)
 	{
 		c1 = (*s1 >= 'A' && *s1 <= 'Z') ? *s1 + 32 : *s1;
 		c2 = (*s2 >= 'A' && *s2 <= 'Z') ? *s2 + 32 : *s2;
-
 		if (c1 != c2)
 			return (c1 - c2);
 		s1++;
@@ -111,8 +108,6 @@ int _strcoll(const char *s1, const char *s2)
 	}
 	if (*s1 != *s2)
 		return (*s1 - *s2);
-
-	/* S'ils sont identiques en ignorant la casse, on departage par ASCII pur */
 	while (*o1 && (*o1 == *o2))
 	{
 		o1++;
@@ -136,6 +131,7 @@ int parse_options(int argc, char **argv, opt_t *opt)
 	opt->one = 0;
 	opt->a = 0;
 	opt->A = 0;
+	opt->l = 0;
 
 	for (i = 1; i < argc; i++)
 	{
@@ -150,6 +146,8 @@ int parse_options(int argc, char **argv, opt_t *opt)
 					opt->a = 1;
 				else if (argv[i][j] == 'A')
 					opt->A = 1;
+				else if (argv[i][j] == 'l')
+					opt->l = 1;
 			}
 		}
 	}
@@ -175,12 +173,10 @@ int main(int argc, char **argv)
 	if (argc - 1 - opt_c == 0)
 		return (process_arg(".", argv[0], 0, &opt));
 
-	/* 1. Collecter tous les arguments valides */
 	for (i = 1; i < argc; i++)
 		if (argv[i][0] != '-' || argv[i][1] == '\0')
 			args[arg_c++] = argv[i];
 
-	/* 2. Trier les arguments (Case-insensitive) */
 	for (i = 0; i < arg_c - 1; i++)
 		for (j = 0; j < arg_c - i - 1; j++)
 			if (_strcoll(args[j], args[j + 1]) > 0)
@@ -190,17 +186,15 @@ int main(int argc, char **argv)
 				args[j + 1] = tmp;
 			}
 
-	/* 3. PASSE 1 : Afficher les fichiers purs et erreurs */
 	for (i = 0; i < arg_c; i++)
 		if (!is_dir(args[i]))
 		{
 			if (process_arg(args[i], argv[0], mult, &opt) == 2)
 				e_code = 2;
 			else
-				has_file = 1; /* ICI : Uniquement si c'est un vrai fichier ! */
+				has_file = 1;
 		}
 
-	/* 4. PASSE 2 : Afficher les dossiers */
 	for (i = 0; i < arg_c; i++)
 		if (is_dir(args[i]))
 		{
@@ -215,4 +209,3 @@ int main(int argc, char **argv)
 		}
 	return (e_code);
 }
-
