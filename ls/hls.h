@@ -23,6 +23,6 @@ typedef struct opt_s
 int process_arg(const char *arg, const char *prog_name, int multiple,
 opt_t *opt);
 int parse_options(int argc, char **argv, opt_t *opt);
-int _strcmp(const char *s1, const char *s2);
+int _strcoll(const char *s1, const char *s2);
 
 #endif /* HLS_H */

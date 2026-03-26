@@ -87,20 +87,38 @@ int is_dir(const char *arg)
 }
 
 /**
- * _strcmp - Compare deux chaines (sans string.h)
+ * _strcoll - Compare deux chaines sans tenir compte de la casse
  * @s1: Premiere chaine
  * @s2: Deuxieme chaine
  *
  * Return: Difference entre les caracteres
  */
-int _strcmp(const char *s1, const char *s2)
+int _strcoll(const char *s1, const char *s2)
 {
-	while (*s1 && (*s1 == *s2))
+	int c1, c2;
+	const char *o1 = s1, *o2 = s2;
+
+	/* On compare en transformant virtuellement en minuscules */
+	while (*s1 && *s2)
 	{
+		c1 = (*s1 >= 'A' && *s1 <= 'Z') ? *s1 + 32 : *s1;
+		c2 = (*s2 >= 'A' && *s2 <= 'Z') ? *s2 + 32 : *s2;
+
+		if (c1 != c2)
+			return (c1 - c2);
 		s1++;
 		s2++;
 	}
-	return (*(unsigned char *)s1 - *(unsigned char *)s2);
+	if (*s1 != *s2)
+		return (*s1 - *s2);
+
+	/* S'ils sont identiques en ignorant la casse, on departage par ASCII pur */
+	while (*o1 && (*o1 == *o2))
+	{
+		o1++;
+		o2++;
+	}
+	return (*(unsigned char *)o1 - *(unsigned char *)o2);
 }
 
 /**
@@ -157,22 +175,20 @@ int main(int argc, char **argv)
 	if (argc - 1 - opt_c == 0)
 		return (process_arg(".", argv[0], 0, &opt));
 
-	/* 1. Collecter tous les arguments valides */
 	for (i = 1; i < argc; i++)
 		if (argv[i][0] != '-' || argv[i][1] == '\0')
 			args[arg_c++] = argv[i];
 
-	/* 2. Trier les arguments par ordre alphabetique (Bubble sort) */
+	/* Utilisation de notre nouvelle fonction _strcoll */
 	for (i = 0; i < arg_c - 1; i++)
 		for (j = 0; j < arg_c - i - 1; j++)
-			if (_strcmp(args[j], args[j + 1]) > 0)
+			if (_strcoll(args[j], args[j + 1]) > 0)
 			{
 				const char *tmp = args[j];
 				args[j] = args[j + 1];
 				args[j + 1] = tmp;
 			}
 
-	/* 3. PASSE 1 : Afficher les fichiers purs */
 	for (i = 0; i < arg_c; i++)
 		if (!is_dir(args[i]))
 		{
@@ -181,14 +197,13 @@ int main(int argc, char **argv)
 			has_file = 1;
 		}
 
-	/* 4. PASSE 2 : Afficher les dossiers */
 	for (i = 0; i < arg_c; i++)
 		if (is_dir(args[i]))
 		{
 			if (mult && !first_dir)
 				printf("\n");
 			else if (has_file && first_dir)
-				printf("\n"); /* Le fameux espace manquant ! */
+				printf("\n");
 
 			if (process_arg(args[i], argv[0], mult, &opt) == 2)
 				e_code = 2;
