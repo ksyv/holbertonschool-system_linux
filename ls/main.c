@@ -22,9 +22,15 @@ int process_arg(const char *arg, const char *prog_name, int multiple)
 		{
 			printf("%s\n", arg);
 			return (0);
+		} /* Si on n'a pas les droits sur le dossier */
+		else if (errno == EACCES)
+		{
+			sprintf(err_buf, "%s: cannot open directory %s", prog_name, arg);
 		}
+        else {
 		/* Sinon, c'est une vraie erreur (ex: dossier introuvable) */
 		sprintf(err_buf, "%s: cannot access %s", prog_name, arg);
+        }
 		perror(err_buf);
 		return (2); /* ls renvoie 2 pour ce type d'erreur */
 	}
