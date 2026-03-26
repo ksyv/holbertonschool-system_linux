@@ -92,13 +92,6 @@ int parse_options(int argc, char **argv, opt_t *opt)
  *
  * Return: 0 en cas de succès complet, 2 si une erreur est survenue
  */
-/**
- * main - Point d'entrée pour hls
- * @argc: Nombre d'arguments
- * @argv: Tableau d'arguments
- *
- * Return: 0 en cas de succès complet, 2 si une erreur est survenue
- */
 int main(int argc, char **argv)
 {
 	int i, exit_code = 0, multiple, opt_count, file_count;
