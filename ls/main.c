@@ -3,17 +3,18 @@
 /**
  * process_arg - Lit un dossier ou affiche un fichier
  * @arg: Le nom du dossier ou fichier a lire
- * @p_name: Le nom du programme execute
- * @mult: 1 s'il y a plusieurs dossiers, 0 sinon
+ * @prog_name: Le nom du programme execute
+ * @multiple: 1 s'il y a plusieurs dossiers, 0 sinon
  * @opt: Pointeur vers la structure d'options
  *
  * Return: 0 en cas de succes, 2 en cas d'erreur
  */
-int process_arg(const char *arg, const char *p_name, int mult, opt_t *opt)
+int process_arg(const char *arg, const char *prog_name, int multiple,
+opt_t *opt)
 {
 	DIR *dir;
 	struct dirent *read;
-	char err[512];
+	char err_buf[512];
 
 	dir = opendir(arg);
 	if (dir == NULL)
@@ -23,15 +24,16 @@ int process_arg(const char *arg, const char *p_name, int mult, opt_t *opt)
 			printf("%s\n", arg);
 			return (0);
 		}
-		if (errno == EACCES)
-			sprintf(err, "%s: cannot open directory %s", p_name, arg);
+		else if (errno == EACCES)
+			sprintf(err_buf, "%s: cannot open directory %s", prog_name, arg);
 		else
-			sprintf(err, "%s: cannot access %s", p_name, arg);
-		perror(err);
+			sprintf(err_buf, "%s: cannot access %s", prog_name, arg);
+
+		perror(err_buf);
 		return (2);
 	}
 
-	if (mult)
+	if (multiple)
 		printf("%s:\n", arg);
 
 	while ((read = readdir(dir)) != NULL)
@@ -52,7 +54,7 @@ int process_arg(const char *arg, const char *p_name, int mult, opt_t *opt)
 }
 
 /**
- * is_dir - Verifie si un chemin est un dossier
+ * is_dir - Verifie si un chemin est un dossier (gere les symlinks)
  * @arg: Le chemin a tester
  *
  * Return: 1 si dossier, 0 sinon
@@ -78,7 +80,7 @@ int is_dir(const char *arg)
 }
 
 /**
- * parse_options - Analyse les arguments pour allumer les flags
+ * parse_options - Analyse les arguments pour allumer les bons flags
  * @argc: Nombre d'arguments
  * @argv: Tableau des arguments
  * @opt: Structure d'options a remplir
@@ -115,45 +117,43 @@ int parse_options(int argc, char **argv, opt_t *opt)
  */
 int main(int argc, char **argv)
 {
-	int i, exit_code = 0, mult, opt_c, f_idx = 0, d_idx = 0;
-	const char *files[100], *dirs[100];
+	int i, exit_code = 0, multiple, opt_count, file_count;
+	int first_dir = 1;
 	opt_t opt;
 
-	opt_c = parse_options(argc, argv, &opt);
-	mult = (argc - 1 - opt_c > 1);
-
-	if (argc - 1 - opt_c == 0)
-		return (process_arg(".", argv[0], 0, &opt));
-
-	/* Remplissage explicite de deux tableaux pour forcer le tri */
-	for (i = 1; i < argc; i++)
+	opt_count = parse_options(argc, argv, &opt);
+	file_count = (argc - 1) - opt_count;
+	multiple = (file_count > 1);
+	if (file_count == 0)
 	{
-		if (argv[i][0] == '-' && argv[i][1] != '\0')
-			continue;
-		if (is_dir(argv[i]))
-			dirs[d_idx++] = argv[i];
-		else
-			files[f_idx++] = argv[i];
+		exit_code = process_arg(".", argv[0], 0, &opt);
 	}
-
-	/* Traitement des fichiers (garanti en premier) */
-	for (i = 0; i < f_idx; i++)
+	else
 	{
-		if (process_arg(files[i], argv[0], mult, &opt) == 2)
-			exit_code = 2;
-	}
+		for (i = 1; i < argc; i++)
+		{
+			if (argv[i][0] == '-' && argv[i][1] != '\0')
+				continue;
 
-	/* Traitement des dossiers (garanti en second) */
-	for (i = 0; i < d_idx; i++)
-	{
-		/* Le vrai ls saute une ligne entre les fichiers et le 1er dossier, SAUF si -1 est actif (ce que la moulinette a l'air d'exiger) */
-		if (mult && i > 0)
-			printf("\n");
-		else if (mult && i == 0 && f_idx > 0 && !opt.one)
-			printf("\n");
-
-		if (process_arg(dirs[i], argv[0], mult, &opt) == 2)
-			exit_code = 2;
+			if (!is_dir(argv[i]))
+			{
+				if (process_arg(argv[i], argv[0], multiple, &opt) == 2)
+					exit_code = 2;
+			}
+		}
+		for (i = 1; i < argc; i++)
+		{
+			if (argv[i][0] == '-' && argv[i][1] != '\0')
+				continue;
+			if (is_dir(argv[i]))
+			{
+				if (multiple && !first_dir)
+					printf("\n");
+				if (process_arg(argv[i], argv[0], multiple, &opt) == 2)
+					exit_code = 2;
+				first_dir = 0;
+			}
+		}
 	}
 	return (exit_code);
 }
