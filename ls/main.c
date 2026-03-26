@@ -27,7 +27,7 @@ int process_arg(const char *arg, const char *prog_name, int multiple, opt_t *opt
 			sprintf(err_buf, "%s: cannot open directory %s", prog_name, arg);
 		else
 			sprintf(err_buf, "%s: cannot access %s", prog_name, arg);
-		
+
 		perror(err_buf);
 		return (2);
 	}
@@ -119,11 +119,9 @@ int main(int argc, char **argv)
 	int i, exit_code = 0, multiple, opt_count, file_count;
 	int first_dir = 1;
 	opt_t opt;
-
 	opt_count = parse_options(argc, argv, &opt);
 	file_count = (argc - 1) - opt_count;
 	multiple = (file_count > 1);
-
 	if (file_count == 0)
 	{
 		exit_code = process_arg(".", argv[0], 0, &opt);
@@ -135,28 +133,24 @@ int main(int argc, char **argv)
 		{
 			if (argv[i][0] == '-' && argv[i][1] != '\0')
 				continue;
-			
+
 			if (!is_dir(argv[i]))
 			{
 				if (process_arg(argv[i], argv[0], multiple, &opt) == 2)
 					exit_code = 2;
 			}
 		}
-
 		/* PASSE 2 : Dossiers */
 		for (i = 1; i < argc; i++)
 		{
 			if (argv[i][0] == '-' && argv[i][1] != '\0')
 				continue;
-			
 			if (is_dir(argv[i]))
 			{
 				if (multiple && !first_dir)
 					printf("\n");
-				
 				if (process_arg(argv[i], argv[0], multiple, &opt) == 2)
 					exit_code = 2;
-				
 				first_dir = 0;
 			}
 		}
