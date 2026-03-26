@@ -9,7 +9,8 @@
  *
  * Return: 0 en cas de succes, 2 en cas d'erreur
  */
-int process_arg(const char *arg, const char *prog_name, int multiple, opt_t *opt)
+int process_arg(const char *arg, const char *prog_name, int multiple, 
+    opt_t *opt)
 {
 	DIR *dir;
 	struct dirent *read;
@@ -119,6 +120,7 @@ int main(int argc, char **argv)
 	int i, exit_code = 0, multiple, opt_count, file_count;
 	int first_dir = 1;
 	opt_t opt;
+
 	opt_count = parse_options(argc, argv, &opt);
 	file_count = (argc - 1) - opt_count;
 	multiple = (file_count > 1);
@@ -128,7 +130,6 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		/* PASSE 1 : Fichiers purs et erreurs */
 		for (i = 1; i < argc; i++)
 		{
 			if (argv[i][0] == '-' && argv[i][1] != '\0')
@@ -140,7 +141,6 @@ int main(int argc, char **argv)
 					exit_code = 2;
 			}
 		}
-		/* PASSE 2 : Dossiers */
 		for (i = 1; i < argc; i++)
 		{
 			if (argv[i][0] == '-' && argv[i][1] != '\0')
