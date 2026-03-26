@@ -119,6 +119,7 @@ int main(int argc, char **argv)
 	int i, exit_code = 0, multiple, opt_count, file_count;
 	int first_dir = 1;
 	opt_t opt;
+    printf("====== COUCOU HOLBERTON ======\n");
 
 	opt_count = parse_options(argc, argv, &opt);
 	file_count = (argc - 1) - opt_count;
